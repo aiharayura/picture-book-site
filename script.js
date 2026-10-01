@@ -1,41 +1,97 @@
-const latestContainer = document.getElementById("latest-book");
 const grid = document.getElementById("book-grid");
-const count = document.getElementById("book-count");
+const searchInput = document.getElementById("search-input");
+const resultCount = document.getElementById("result-count");
+const emptyMessage = document.getElementById("empty-message");
 
-count.textContent = `${books.length} picture books / reading notes`;
-
-const latestBook = books[books.length - 1];
-const olderBooks = books.slice(0, -1);
-
-latestContainer.innerHTML = `
-<article class="latest">
-  <div class="latest-cover cover-${latestBook.color}">${latestBook.title}</div>
-  <div>
-    <span class="latest-badge">NEW</span>
-    <div class="latest-author">${latestBook.author}</div>
-    <h3>${latestBook.title}</h3>
-    <p class="latest-summary">${latestBook.summary}</p>
-    <div class="latest-memo"><strong>読んだメモ</strong>${latestBook.memo}</div>
-  </div>
-</article>`;
-
-olderBooks.forEach((book,index)=>{
-  const card=document.createElement("article");
-  card.className="card";
-  card.innerHTML=`
-    <div class="cover cover-${book.color}">${book.title}</div>
-    <div class="author">${book.author}</div>
-    <h3>${book.title}</h3>
-    <p class="summary">${book.summary}</p>
-    <div class="memo"><strong>読んだメモ</strong>${book.memo}</div>
-    <div class="details" id="details-${index}">${book.details}</div>
-    <div class="button-area"><button class="button" aria-expanded="false" aria-controls="details-${index}" onclick="toggleDetails(this,'details-${index}')">詳しく見る</button></div>`;
-  grid.appendChild(card);
-});
-
-function toggleDetails(button,id){
-  const box=document.getElementById(id);
-  const open=box.classList.toggle("open");
-  button.setAttribute("aria-expanded",String(open));
-  button.textContent=open?"閉じる":"詳しく見る";
+function formatAge(ageMin) {
+  if (ageMin === null) return "情報なし";
+  if (ageMin === 1.5) return "1歳半から";
+  return `${ageMin}歳から`;
 }
+
+function createBookCard(book) {
+  const article = document.createElement("article");
+  article.className = "book-card";
+
+  const translatorText = book.translator
+    ? `<br>訳：${book.translator}`
+    : "";
+
+  const tagsHtml = book.tags
+    .map(tag => `<span class="tag">${tag}</span>`)
+    .join("");
+
+  article.innerHTML = `
+    <div class="book-cover">
+      表紙画像は後で追加
+    </div>
+
+    <h3>${book.title}</h3>
+
+    <p class="creator">
+      作：${book.author}<br>
+      絵：${book.illustrator}
+      ${translatorText}
+    </p>
+
+    <p class="description">${book.description}</p>
+
+    <dl class="meta">
+      <div class="meta-row">
+        <dt>出版社</dt>
+        <dd>${book.publisher}</dd>
+      </div>
+      <div class="meta-row">
+        <dt>出版年</dt>
+        <dd>${book.year}年</dd>
+      </div>
+      <div class="meta-row">
+        <dt>対象</dt>
+        <dd>${formatAge(book.ageMin)}</dd>
+      </div>
+      <div class="meta-row">
+        <dt>ISBN</dt>
+        <dd>${book.isbn}</dd>
+      </div>
+    </dl>
+
+    <div class="tags">
+      ${tagsHtml}
+    </div>
+  `;
+
+  return article;
+}
+
+function renderBooks(bookList) {
+  grid.innerHTML = "";
+
+  bookList.forEach(book => {
+    grid.appendChild(createBookCard(book));
+  });
+
+  resultCount.textContent = `${bookList.length}冊`;
+  emptyMessage.hidden = bookList.length !== 0;
+}
+
+function searchBooks() {
+  const keyword = searchInput.value.trim().toLowerCase();
+
+  const filteredBooks = books.filter(book => {
+    const searchableText = `
+      ${book.title}
+      ${book.author}
+      ${book.illustrator}
+      ${book.translator}
+    `.toLowerCase();
+
+    return searchableText.includes(keyword);
+  });
+
+  renderBooks(filteredBooks);
+}
+
+searchInput.addEventListener("input", searchBooks);
+
+// 最初は全冊を表示
+renderBooks(books);
